@@ -1,0 +1,31 @@
+# Ambiente virtual
+venv/
+.env
+
+# Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Diretórios de build
+build/
+dist/
+*.egg-info/
+
+# Banco local
+*.db
+
+# Alembic cache
+migrations/versions/*.pyc
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Arquivos temporários
+*.tmp
+.DS_Store
