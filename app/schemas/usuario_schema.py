@@ -26,3 +26,15 @@ class UsuarioResponse(UsuarioBase):
 
     class Config:
         from_attributes = True  
+
+
+# Classe para filtrar no schema o que vai ser listado do GET de todos os usuarios
+class UsuarioListResponse(BaseModel):
+    id: int
+    nome: str
+    email: EmailStr
+    ativo: bool
+    criado_em: datetime
+
+    class Config:
+        from_attributes = True

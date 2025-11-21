@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from passlib.context import CryptContext
 
 from app.models.usuario import Usuario
@@ -38,7 +38,7 @@ def criar_usuario_service(dados: UsuarioCreate, db: Session) -> Usuario:
             detail="CPF já está cadastrado."
         )
 
-    # Gerar hash da senha
+    # Gerar hash da senha || revisar esse print
     print(">>> Valor recebido para senha:", dados.senha, type(dados.senha))
     senha_hash = gerar_hash_senha(dados.senha)
 
@@ -59,3 +59,26 @@ def criar_usuario_service(dados: UsuarioCreate, db: Session) -> Usuario:
     db.refresh(novo_usuario)
 
     return novo_usuario
+
+def buscar_usuario_por_id(usuario_id: int, db:Session):
+    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuário não encontrado."
+        )
+        
+    return usuario
+
+#Listando  todos os usuarios com GET || com limite para não ficar pesado
+
+def listar_usuarios_service(skip: int, limit: int, nome: str | None, db: Session):
+    query = db.query(Usuario)
+
+    if nome:
+        query = query.filter(Usuario.nome.ilike(f"%{nome}%"))
+
+    return query.offset(skip).limit(limit).all()
+
+

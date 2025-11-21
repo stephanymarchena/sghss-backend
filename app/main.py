@@ -1,9 +1,7 @@
-# Arquivo: main.py
-
 from fastapi import FastAPI
 from app.routes.usuario_router import router as usuario_router
-# 1. Importar a função de inicialização
 from app.database import inicializar_bd 
+from app.routes.auth_router import router as auth_router
 
 
 app = FastAPI(
@@ -11,11 +9,10 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# 2. Chamar a função de inicialização aqui!
 inicializar_bd() 
 
-
 app.include_router(usuario_router)
+app.include_router(auth_router)
 
 @app.get("/")
 def root():
