@@ -11,6 +11,10 @@ from app.database import get_db
 from app.schemas.usuario_schema import UsuarioCreate, UsuarioResponse, UsuarioListResponse
 from app.core.auth import get_current_user
 
+from app.schemas.usuario_schema import UsuarioUpdate
+from app.services.usuario_service import atualizar_usuario_service
+from app.services.usuario_service import deletar_usuario_service
+
 router = APIRouter(
     prefix="/usuarios",
     tags=["Usuarios"]
@@ -20,6 +24,7 @@ router = APIRouter(
 def criar_usuario(dados: UsuarioCreate, db: Session = Depends(get_db)):
     usuario = criar_usuario_service(dados, db)
     return UsuarioResponse.model_validate(usuario)
+
 
 
 @router.get("/me")
@@ -39,3 +44,25 @@ def listar_usuarios(skip: int = 0, limit: int = 10, nome: str | None = None,
     
     usuarios = listar_usuarios_service(skip, limit, nome, db)
     return usuarios
+
+
+
+@router.patch("/{usuario_id}", response_model=UsuarioResponse)
+def atualizar_usuario(
+    usuario_id: int,
+    dados: UsuarioUpdate,
+    db: Session = Depends(get_db),
+    usuario_atual = Depends(get_current_user)
+):
+    usuario = atualizar_usuario_service(usuario_id, dados, db)
+    return UsuarioResponse.model_validate(usuario)
+
+
+@router.delete("/{usuario_id}")
+def deletar_usuario(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    usuario_atual = Depends(get_current_user)
+):
+    resultado = deletar_usuario_service(usuario_id, db)
+    return resultado
