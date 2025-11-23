@@ -5,6 +5,8 @@ from passlib.context import CryptContext
 from app.models.usuario import Usuario
 from app.schemas.usuario_schema import UsuarioCreate
 
+from app.schemas.usuario_schema import UsuarioUpdate
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -82,3 +84,50 @@ def listar_usuarios_service(skip: int, limit: int, nome: str | None, db: Session
     return query.offset(skip).limit(limit).all()
 
 
+# Atualização do usuario -- Usado no PATCH
+def atualizar_usuario_service(usuario_id: int, dados: UsuarioUpdate, db: Session) -> Usuario:
+    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+    dados_dict = dados.model_dump(exclude_unset=True)
+
+    # Validar email duplicado
+    if "email" in dados_dict:
+        usuario_existente = db.query(Usuario).filter(
+            Usuario.email == dados_dict["email"],
+            Usuario.id != usuario_id
+        ).first()
+
+        if usuario_existente:
+            raise HTTPException(
+                status_code=400,
+                detail="E-mail já está cadastrado."
+            )
+
+    # Se vier senha nova → gerar hash
+    if "senha" in dados_dict:
+        dados_dict["senha_hash"] = gerar_hash_senha(dados_dict.pop("senha"))
+
+    # Atualizar campos dinamicamente
+    for campo, valor in dados_dict.items():
+        setattr(usuario, campo, valor)
+
+    db.commit()
+    db.refresh(usuario)
+    return usuario
+
+#Delete Físico (Não é a exclusão lógica do usuario -- Inativação)
+def deletar_usuario_service(usuario_id: int, db: Session):
+    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuário não encontrado."
+        )
+
+    db.delete(usuario)
+    db.commit()
+    return {"message": "Usuário deletado com sucesso."}
