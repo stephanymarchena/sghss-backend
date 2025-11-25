@@ -20,5 +20,3 @@ class ProfissionalSaude(Base):
     # Relacionamento com Usuario (1:1)
     usuario = relationship("Usuario", backref="profissional_saude")
 
-    # Relacionamento com Consulta (pro futuro)
-    # consultas = relationship("Consulta", back_populates="profissional")
