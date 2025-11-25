@@ -1,6 +1,10 @@
 from pydantic import BaseModel, Field
 from typing import Literal
 
+class UsuarioResumo(BaseModel):
+    id: int
+    nome: str
+
 
 # Campos comuns para criação e resposta || aceitar somente medico, enfermeiro e tecnico 
 class ProfissionalBase(BaseModel):
@@ -23,8 +27,11 @@ class ProfissionalUpdate(BaseModel):
 
 
 #  resposta da API
-class ProfissionalResponse(ProfissionalBase):
+class ProfissionalResponse(BaseModel):
     id: int
+    tipo_profissional: str
+    registro_profissional: str
+    usuario: UsuarioResumo
 
     class Config:
         from_attributes = True

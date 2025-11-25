@@ -36,19 +36,43 @@ def criar_profissional_service(dados: ProfissionalCreate, db: Session) -> Profis
     return profissional
 
 
-def buscar_profissional_por_id_service(profissional_id: int, db: Session) -> ProfissionalSaude:
-    profissional = db.query(ProfissionalSaude).filter(
+def buscar_profissional_por_id_service(profissional_id: int, db: Session):
+    p = db.query(ProfissionalSaude).filter(
         ProfissionalSaude.id == profissional_id
     ).first()
 
-    if not profissional:
+    if not p:
         raise HTTPException(status_code=404, detail="Profissional não encontrado.")
 
-    return profissional
+    return {
+        "id": p.id,
+        "tipo_profissional": p.tipo_profissional,
+        "registro_profissional": p.registro_profissional,
+        "usuario": {
+            "id": p.usuario.id,
+            "nome": p.usuario.nome
+        }
+    }
 
 
-def listar_profissionais_service(db: Session) -> list[ProfissionalSaude]:
-    return db.query(ProfissionalSaude).all()
+
+def listar_profissionais_service(db: Session):
+    profissionais = db.query(ProfissionalSaude).all()
+    resultados = []
+
+    for p in profissionais:
+        resultados.append({
+            "id": p.id,
+            "tipo_profissional": p.tipo_profissional,
+            "registro_profissional": p.registro_profissional,
+            "usuario": {
+                "id": p.usuario.id,
+                "nome": p.usuario.nome
+            }
+        })
+
+    return resultados
+
 
 
 def atualizar_profissional_service(profissional_id: int, dados: ProfissionalUpdate, db: Session) -> ProfissionalSaude:

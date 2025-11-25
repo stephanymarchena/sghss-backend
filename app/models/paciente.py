@@ -15,5 +15,4 @@ class Paciente(Base):
     # Relacionamento com a tabela Usuario
     usuario = relationship("Usuario", backref="paciente")
 
-    # Relacionamento com Consulta (será ativado no futuro)
-    # consultas = relationship("Consulta", back_populates="paciente")
+   
