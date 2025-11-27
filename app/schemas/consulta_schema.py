@@ -21,7 +21,7 @@ class ConsultaBase(BaseModel):
     paciente_id: int
     profissional_id: int
 
-class ConsultaCreate(ConsultaBase):
+class ConsultaCreate(ConsultaBase): #herdando de ConsultaBase 
     pass
 
 class ConsultaUpdate(BaseModel):

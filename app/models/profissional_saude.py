@@ -20,3 +20,8 @@ class ProfissionalSaude(Base):
     # Relacionamento com Usuario (1:1)
     usuario = relationship("Usuario", backref="profissional_saude")
 
+    # esse property aqui vai ajudar na parte de resposta da API, 
+    # para usar o atributo nome associado ao profissional que vem usuario.nome (Usuario)
+    @property
+    def nome(self):
+        return self.usuario.nome
