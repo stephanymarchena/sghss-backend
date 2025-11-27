@@ -14,9 +14,17 @@ Base = declarative_base()
 
 
 def inicializar_bd():
-    import app.models.usuario  
+   # Modelos de usuário e perfis vinculados
+    import app.models.usuario
+    import app.models.paciente
+    import app.models.profissional_saude
+
+    # Modelos de funções do sistema
+    import app.models.consulta
+    import app.models.agenda  
+
     
-    # Cria a tabela 'usuarios' se ela ainda não existir
+   # Cria todas as tabelas que ainda não existem
     Base.metadata.create_all(bind=engine)
     print(">>> Banco de dados inicializado. As tabelas foram verificadas/criadas.")
 

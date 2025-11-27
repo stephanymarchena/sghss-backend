@@ -4,6 +4,7 @@ from app.routes.auth_router import router as auth_router
 from app.routes.paciente_router import router as paciente_router
 from app.routes.profissional_router import router as profissional_router
 from app.routes.consulta_router import router as consulta_router
+from app.routes.agenda_router import router as agenda_router
 from app.database import inicializar_bd 
 
 
@@ -20,6 +21,7 @@ app.include_router(auth_router)
 app.include_router(paciente_router)
 app.include_router(profissional_router)
 app.include_router(consulta_router)
+app.include_router(agenda_router)
 
 
 @app.get("/")
