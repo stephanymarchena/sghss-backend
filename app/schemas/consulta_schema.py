@@ -1,11 +1,13 @@
-from pydantic import BaseModel
-from typing import Literal
 from datetime import datetime
+from pydantic import BaseModel
 
+#RESUMOS 
 
 class PacienteResumo(BaseModel):
     id: int
     nome: str
+
+    model_config = {"from_attributes": True} 
 
 
 class ProfissionalResumo(BaseModel):
@@ -13,23 +15,29 @@ class ProfissionalResumo(BaseModel):
     nome: str
     tipo_profissional: str
 
+    model_config = {"from_attributes": True}
 
+
+#CONSULTA BASE 
 
 class ConsultaBase(BaseModel):
     data_hora: datetime
     observacoes: str | None = None
+
+
+#CREATE E UPDATE 
+
+class ConsultaCreate(ConsultaBase):
     paciente_id: int
     profissional_id: int
 
-class ConsultaCreate(ConsultaBase): #herdando de ConsultaBase 
-    pass
 
 class ConsultaUpdate(BaseModel):
     data_hora: datetime | None = None
     observacoes: str | None = None
-    paciente_id: int | None = None
-    profissional_id: int | None = None
-    status: Literal["agendada","confirmada","cancelada","finalizada"] | None = None
+
+
+#RESPOSTA COMPLETA 
 
 class ConsultaResponse(BaseModel):
     id: int
@@ -40,5 +48,4 @@ class ConsultaResponse(BaseModel):
     paciente: PacienteResumo
     profissional: ProfissionalResumo
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True} #objeto ORM
