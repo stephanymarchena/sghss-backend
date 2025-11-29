@@ -27,6 +27,8 @@ def inicializar_bd():
     import app.models.prontuario
     import app.models.entrada_prontuario
 
+    #Modelo para exames
+    import app.models.exame
 
    # Cria todas as tabelas que ainda não existem
     Base.metadata.create_all(bind=engine)
