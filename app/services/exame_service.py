@@ -5,7 +5,10 @@ from datetime import datetime, timezone
 from app.models.exame import Exame
 from app.models.paciente import Paciente
 from app.models.profissional_saude import ProfissionalSaude
+
 from app.schemas.exame_schema import ExameCreate, ExameUpdate
+from app.services.prontuario_service import adicionar_entrada
+from app.schemas.prontuario_schema import EntradaProntuarioCreate
 
 
 # Criar exame
@@ -50,12 +53,27 @@ def atualizar_exame_service(exame_id: int, dados: ExameUpdate, db: Session) -> E
     exame = buscar_exame_service(exame_id, db)
 
     dados_dict = dados.model_dump(exclude_unset=True)
+    status_anterior = exame.status  # guardar status antes da atualização
 
+    # aplicar alterações
     for campo, valor in dados_dict.items():
         setattr(exame, campo, valor)
 
     exame.atualizado_em = datetime.now(timezone.utc)
-
     db.commit()
     db.refresh(exame)
+
+    # integração EXAME -> PRONTUÁRIO
+    if exame.status == "concluido" and status_anterior != "concluido":
+        texto = f"Resultado do exame {exame.tipo_exame}: {exame.resultado or 'sem resultado informado.'}"
+        adicionar_entrada(
+            db=db,
+            paciente_id=exame.paciente_id,
+            dados=EntradaProntuarioCreate(
+                texto=texto,
+                tipo="exame",
+                consulta_id=exame.consulta_id
+            )
+        )
+
     return exame
