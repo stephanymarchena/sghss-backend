@@ -23,6 +23,8 @@ class UsuarioResponse(UsuarioBase):
     ativo: bool
     criado_em: datetime
     atualizado_em: datetime
+    role: str
+    
 
     class Config:
         from_attributes = True  

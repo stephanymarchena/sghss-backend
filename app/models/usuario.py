@@ -17,6 +17,8 @@ class Usuario(Base):
     sexo = Column(String, nullable=True)
     data_nascimento = Column(Date, nullable=True)
 
+    role = Column(String, default="usuario", nullable=False) # faz parte da configuração do admin - vai ser como um super usuário.
+
     criado_em = Column(
         DateTime,
         default=lambda: datetime.now(timezone.utc)

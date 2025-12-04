@@ -7,6 +7,7 @@ from app.routes.consulta_router import router as consulta_router
 from app.routes.agenda_router import router as agenda_router
 from app.routes import prontuario_router
 from app.routes import exame_router
+from app.routes import admin_router
 from app.database import inicializar_bd 
 
 
@@ -26,6 +27,7 @@ app.include_router(consulta_router)
 app.include_router(agenda_router)
 app.include_router(prontuario_router.router)
 app.include_router(exame_router.router)
+app.include_router(admin_router.router)
 
 
 @app.get("/")
