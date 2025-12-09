@@ -133,7 +133,7 @@ try:
     print("➡️  Médico: roberto.medico@sghss.com / senha123")
 
 except Exception as e:
-    print("\n❌ ERRO DURANTE O POVOAMENTO, PUTS,DEU RUIM:")
+    print("\n❌ ERRO DURANTE O POVOAMENTO, PUTSS,DEU RUIM:")
     print(str(e))
 
 finally:
