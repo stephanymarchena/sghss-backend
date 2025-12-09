@@ -1,11 +1,9 @@
-# app/routes/agenda_router.py
-
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.database import get_db
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user, is_admin, is_profissional
 
 from app.schemas.agenda_schema import (
     AgendaCreate,
@@ -29,8 +27,9 @@ router = APIRouter(
     tags=["Agendas"]
 )
 
+
 # ---------------------------------------------------------
-# Criar horário (apenas profissional)
+# Criar horário (apenas profissional ou admin)
 # ---------------------------------------------------------
 @router.post("/", response_model=AgendaResponse)
 def criar_agenda(
@@ -38,13 +37,17 @@ def criar_agenda(
     db: Session = Depends(get_db),
     usuario_atual = Depends(get_current_user)
 ):
-    # Se o usuário atual for um profissional, só pode criar agenda para si
-    # hasattr() = tem esse atributo, retorna true e false
-    if hasattr(usuario_atual, "profissional_saude") and usuario_atual.profissional_saude:
+
+    # Só admin OU profissional podem criar agenda
+    if usuario_atual.role != "admin":
+        if not hasattr(usuario_atual, "profissional_saude") or not usuario_atual.profissional_saude:
+            raise HTTPException(403, "Apenas profissionais podem criar horários.")
+
+        # Profissional só cria agenda para si
         if usuario_atual.profissional_saude[0].id != dados.profissional_id:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você só pode criar horários para a sua própria agenda."
+                403,
+                "Você só pode criar horários para a sua própria agenda."
             )
 
     agenda = create_agenda(db, dados)
@@ -53,6 +56,7 @@ def criar_agenda(
 
 # ---------------------------------------------------------
 # Listar horários de um profissional
+# Somente admin ou o próprio profissional
 # ---------------------------------------------------------
 @router.get("/profissional/{profissional_id}", response_model=list[AgendaResponse])
 def listar_agenda_por_profissional(
@@ -60,11 +64,23 @@ def listar_agenda_por_profissional(
     db: Session = Depends(get_db),
     usuario_atual = Depends(get_current_user)
 ):
+
+    # Admin vê tudo
+    if usuario_atual.role != "admin":
+
+        # Usuário precisa ser profissional
+        if not hasattr(usuario_atual, "profissional_saude") or not usuario_atual.profissional_saude:
+            raise HTTPException(403, "Acesso restrito a profissionais.")
+
+        # Tem que ser o dono da agenda
+        if usuario_atual.profissional_saude[0].id != profissional_id:
+            raise HTTPException(403, "Você só pode ver sua própria agenda.")
+
     return listar_agenda_profissional(db, profissional_id)
 
 
 # ---------------------------------------------------------
-# Listar horários disponíveis por data
+# Listar horários disponíveis por data (ABERTO a todos)
 # ---------------------------------------------------------
 @router.get("/disponiveis/{profissional_id}", response_model=list[AgendaResponse])
 def listar_disponiveis_por_data(
@@ -76,13 +92,13 @@ def listar_disponiveis_por_data(
     try:
         data_obj = datetime.strptime(data, "%Y-%m-%d").date()
     except ValueError:
-        raise HTTPException(status_code=400, detail="Formato de data inválido.")
+        raise HTTPException(400, "Formato de data inválido.")
 
     return listar_disponiveis(db, profissional_id, data_obj)
 
 
 # ---------------------------------------------------------
-# Reservar horário
+# Reservar horário manualmente (admin ou dono da agenda)
 # ---------------------------------------------------------
 @router.put("/reservar/{agenda_id}", response_model=AgendaResponse)
 def reservar_um_horario(
@@ -90,12 +106,22 @@ def reservar_um_horario(
     db: Session = Depends(get_db),
     usuario_atual = Depends(get_current_user)
 ):
-    agenda = reservar_horario(db, agenda_id)
-    return agenda
+    agenda = get_agenda(db, agenda_id)
+    if not agenda:
+        raise HTTPException(404, "Horário não encontrado.")
+
+    # se não for admin → precisa ser dono
+    if usuario_atual.role != "admin":
+        if not hasattr(usuario_atual, "profissional_saude") or not usuario_atual.profissional_saude:
+            raise HTTPException(403, "Apenas profissionais podem reservar horários.")
+        if usuario_atual.profissional_saude[0].id != agenda.profissional_id:
+            raise HTTPException(403, "Você só pode reservar horários da sua própria agenda.")
+
+    return reservar_horario(db, agenda_id)
 
 
 # ---------------------------------------------------------
-# Liberar horário
+# Liberar horário (admin ou dono)
 # ---------------------------------------------------------
 @router.put("/liberar/{agenda_id}", response_model=AgendaResponse)
 def liberar_um_horario(
@@ -103,12 +129,21 @@ def liberar_um_horario(
     db: Session = Depends(get_db),
     usuario_atual = Depends(get_current_user)
 ):
-    agenda = liberar_horario(db, agenda_id)
-    return agenda
+    agenda = get_agenda(db, agenda_id)
+    if not agenda:
+        raise HTTPException(404, "Horário não encontrado.")
+
+    if usuario_atual.role != "admin":
+        if not hasattr(usuario_atual, "profissional_saude") or not usuario_atual.profissional_saude:
+            raise HTTPException(403, "Apenas profissionais podem liberar horários.")
+        if usuario_atual.profissional_saude[0].id != agenda.profissional_id:
+            raise HTTPException(403, "Você só pode liberar horários da sua própria agenda.")
+
+    return liberar_horario(db, agenda_id)
 
 
 # ---------------------------------------------------------
-# Atualizar horário
+# Atualizar horário (apenas dono ou admin)
 # ---------------------------------------------------------
 @router.patch("/{agenda_id}", response_model=AgendaResponse)
 def atualizar_um_horario(
@@ -120,21 +155,21 @@ def atualizar_um_horario(
     agenda = get_agenda(db, agenda_id)
 
     if not agenda:
-        raise HTTPException(status_code=404, detail="Agenda não encontrada.")
+        raise HTTPException(404, "Agenda não encontrada.")
 
-    # Apenas o profissional dono da agenda pode editar
-    if hasattr(usuario_atual, "profissional_saude") and usuario_atual.profissional_saude:
+    # Admin pode editar tudo
+    if usuario_atual.role != "admin":
+        # precisa ser o profissional dono
+        if not hasattr(usuario_atual, "profissional_saude") or not usuario_atual.profissional_saude:
+            raise HTTPException(403, "Apenas profissionais podem editar horários.")
         if usuario_atual.profissional_saude[0].id != agenda.profissional_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você não pode editar horários de outro profissional."
-            )
+            raise HTTPException(403, "Você só pode editar sua própria agenda.")
 
     return atualizar_agenda(db, agenda_id, dados)
 
 
 # ---------------------------------------------------------
-# Deletar horário
+# Deletar horário (apenas dono ou admin)
 # ---------------------------------------------------------
 @router.delete("/{agenda_id}")
 def deletar_um_horario(
@@ -145,14 +180,12 @@ def deletar_um_horario(
     agenda = get_agenda(db, agenda_id)
 
     if not agenda:
-        raise HTTPException(status_code=404, detail="Horário não encontrado.")
+        raise HTTPException(404, "Horário não encontrado.")
 
-    # Apenas o dono da agenda pode deletar
-    if hasattr(usuario_atual, "profissional_saude") and usuario_atual.profissional_saude:
+    if usuario_atual.role != "admin":
+        if not hasattr(usuario_atual, "profissional_saude") or not usuario_atual.profissional_saude:
+            raise HTTPException(403, "Apenas profissionais podem excluir horários.")
         if usuario_atual.profissional_saude[0].id != agenda.profissional_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você não pode excluir horários de outro profissional."
-            )
+            raise HTTPException(403, "Você só pode excluir horários da sua agenda.")
 
     return deletar_agenda(db, agenda_id)

@@ -23,10 +23,11 @@ class AgendaUpdate(BaseModel):
     hora: time | None = None
     disponivel: bool | None = None
 
+
 class AgendaResponse(AgendaBase):
     id: int
     disponivel: bool
-    criado_em: datetime
+    #criado_em: datetime
     profissional: ProfissionalResumo
 
     class Config:

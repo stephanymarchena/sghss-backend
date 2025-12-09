@@ -10,8 +10,14 @@ from app.schemas.exame_schema import ExameCreate, ExameUpdate
 from app.services.prontuario_service import adicionar_entrada
 from app.schemas.prontuario_schema import EntradaProntuarioCreate
 
+# Imports do módulo notificação
+from app.services.notificacao_service import criar_notificacao_service
+from app.schemas.notificacao_schema import NotificacaoCreate
 
-# Criar exame
+
+# ---------------------------------------------------------
+# CRIAR EXAME
+# ---------------------------------------------------------
 def criar_exame_service(dados: ExameCreate, db: Session) -> Exame:
     paciente = db.query(Paciente).filter(Paciente.id == dados.paciente_id).first()
     if not paciente:
@@ -32,15 +38,35 @@ def criar_exame_service(dados: ExameCreate, db: Session) -> Exame:
     db.add(exame)
     db.commit()
     db.refresh(exame)
+
+    # ---------------------------------------------------------
+    # NOTIFICAR PACIENTE — exame solicitado
+    # ---------------------------------------------------------
+    try:
+        criar_notificacao_service(
+            paciente.usuario_id,
+            NotificacaoCreate(
+                tipo="exame",
+                mensagem=f"Um exame do tipo '{dados.tipo_exame}' foi solicitado."
+            ),
+            db
+        )
+    except Exception:
+        pass
+
     return exame
 
 
-# Listar exames
+# ---------------------------------------------------------
+# LISTAR EXAMES
+# ---------------------------------------------------------
 def listar_exames_service(db: Session):
     return db.query(Exame).all()
 
 
-# Buscar exame por ID
+# ---------------------------------------------------------
+# BUSCAR EXAME POR ID
+# ---------------------------------------------------------
 def buscar_exame_service(exame_id: int, db: Session) -> Exame:
     exame = db.query(Exame).filter(Exame.id == exame_id).first()
     if not exame:
@@ -48,14 +74,16 @@ def buscar_exame_service(exame_id: int, db: Session) -> Exame:
     return exame
 
 
-# Atualizar exame (status ou resultado)
+# ---------------------------------------------------------
+# ATUALIZAR EXAME (status ou resultado)
+# ---------------------------------------------------------
 def atualizar_exame_service(exame_id: int, dados: ExameUpdate, db: Session) -> Exame:
     exame = buscar_exame_service(exame_id, db)
 
     dados_dict = dados.model_dump(exclude_unset=True)
     status_anterior = exame.status  # guardar status antes da atualização
 
-    # aplicar alterações
+    # aplicar alterações no objeto Exame
     for campo, valor in dados_dict.items():
         setattr(exame, campo, valor)
 
@@ -63,9 +91,15 @@ def atualizar_exame_service(exame_id: int, dados: ExameUpdate, db: Session) -> E
     db.commit()
     db.refresh(exame)
 
-    # integração EXAME -> PRONTUÁRIO
+    # ---------------------------------------------------------
+    # INTEGRAÇÃO EXAME -> PRONTUÁRIO
+    # ---------------------------------------------------------
     if exame.status == "concluido" and status_anterior != "concluido":
-        texto = f"Resultado do exame {exame.tipo_exame}: {exame.resultado or 'sem resultado informado.'}"
+        texto = (
+            f"Resultado do exame {exame.tipo_exame}: "
+            f"{exame.resultado or 'sem resultado informado.'}"
+        )
+
         adicionar_entrada(
             db=db,
             paciente_id=exame.paciente_id,
@@ -75,5 +109,22 @@ def atualizar_exame_service(exame_id: int, dados: ExameUpdate, db: Session) -> E
                 consulta_id=exame.consulta_id
             )
         )
+
+        # ---------------------------------------------------------
+        # NOTIFICAÇÃO — resultado disponível
+        # ---------------------------------------------------------
+        try:
+            paciente = db.query(Paciente).filter(Paciente.id == exame.paciente_id).first()
+            if paciente:
+                criar_notificacao_service(
+                    paciente.usuario_id,
+                    NotificacaoCreate(
+                        tipo="exame",
+                        mensagem=f"Resultado do exame '{exame.tipo_exame}' está disponível."
+                    ),
+                    db
+                )
+        except Exception:
+            pass
 
     return exame

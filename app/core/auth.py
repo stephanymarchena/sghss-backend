@@ -48,3 +48,13 @@ def is_admin(usuario_atual = Depends(get_current_user)):
             detail="Acesso restrito a administradores."
         )
     return usuario_atual
+
+# Permissões do profissional aqui.
+def is_profissional(usuario_atual = Depends(get_current_user)):
+    if not usuario_atual.profissional_saude or len(usuario_atual.profissional_saude) == 0:
+        raise HTTPException(
+            status_code=403,
+            detail="Acesso restrito a profissionais de saúde."
+        )
+    return usuario_atual
+

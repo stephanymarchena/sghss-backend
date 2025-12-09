@@ -9,6 +9,7 @@ from app.routes import prontuario_router
 from app.routes import exame_router
 from app.routes import admin_router
 from app.routes import relatorio_router
+from app.routes import notificacao_router
 from app.database import inicializar_bd 
 
 
@@ -30,6 +31,7 @@ app.include_router(prontuario_router.router)
 app.include_router(exame_router.router)
 app.include_router(admin_router.router)
 app.include_router(relatorio_router.router)
+app.include_router(notificacao_router.router)
 
 
 @app.get("/")

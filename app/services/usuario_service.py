@@ -1,15 +1,16 @@
 from sqlalchemy.orm import Session
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from passlib.context import CryptContext
 
 from app.models.usuario import Usuario
-from app.schemas.usuario_schema import UsuarioCreate
-
-from app.schemas.usuario_schema import UsuarioUpdate
+from app.schemas.usuario_schema import UsuarioCreate, UsuarioUpdate
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+# ---------------------------------------------------------
+# FUNÇÕES DE SENHA
+# ---------------------------------------------------------
 def gerar_hash_senha(senha: str) -> str:
     return pwd_context.hash(senha)
 
@@ -18,9 +19,12 @@ def verificar_senha(senha: str, senha_hash: str) -> bool:
     return pwd_context.verify(senha, senha_hash)
 
 
+# ---------------------------------------------------------
+# CRIAR USUÁRIO
+# ---------------------------------------------------------
 def criar_usuario_service(dados: UsuarioCreate, db: Session) -> Usuario:
-    
-    # Verificar email duplicado
+
+    # Verificar e-mail duplicado
     usuario_existente_email = (
         db.query(Usuario).filter(Usuario.email == dados.email).first()
     )
@@ -40,10 +44,8 @@ def criar_usuario_service(dados: UsuarioCreate, db: Session) -> Usuario:
             detail="CPF já está cadastrado."
         )
 
-    # Gerar hash da senha || revisar esse print
-    print(">>> Valor recebido para senha:", dados.senha, type(dados.senha))
+    # Gerar hash da senha 
     senha_hash = gerar_hash_senha(dados.senha)
-
 
     novo_usuario = Usuario(
         nome=dados.nome,
@@ -62,7 +64,11 @@ def criar_usuario_service(dados: UsuarioCreate, db: Session) -> Usuario:
 
     return novo_usuario
 
-def buscar_usuario_por_id(usuario_id: int, db:Session):
+
+# ---------------------------------------------------------
+# BUSCAR USUÁRIO POR ID
+# ---------------------------------------------------------
+def buscar_usuario_por_id(usuario_id: int, db: Session):
     usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
 
     if not usuario:
@@ -70,11 +76,13 @@ def buscar_usuario_por_id(usuario_id: int, db:Session):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Usuário não encontrado."
         )
-        
+
     return usuario
 
-#Listando  todos os usuarios com GET || com limite para não ficar pesado
 
+# ---------------------------------------------------------
+# LISTAR USUÁRIOS
+# ---------------------------------------------------------
 def listar_usuarios_service(skip: int, limit: int, nome: str | None, db: Session):
     query = db.query(Usuario)
 
@@ -84,7 +92,9 @@ def listar_usuarios_service(skip: int, limit: int, nome: str | None, db: Session
     return query.offset(skip).limit(limit).all()
 
 
-# Atualização do usuario -- Usado no PATCH
+# ---------------------------------------------------------
+# ATUALIZAR USUÁRIO (PATCH)
+# ---------------------------------------------------------
 def atualizar_usuario_service(usuario_id: int, dados: UsuarioUpdate, db: Session) -> Usuario:
     usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
 
@@ -93,7 +103,7 @@ def atualizar_usuario_service(usuario_id: int, dados: UsuarioUpdate, db: Session
 
     dados_dict = dados.model_dump(exclude_unset=True)
 
-    # Validar email duplicado
+    # Verificar e-mail duplicado
     if "email" in dados_dict:
         usuario_existente = db.query(Usuario).filter(
             Usuario.email == dados_dict["email"],
@@ -102,7 +112,7 @@ def atualizar_usuario_service(usuario_id: int, dados: UsuarioUpdate, db: Session
 
         if usuario_existente:
             raise HTTPException(
-                status_code=400,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="E-mail já está cadastrado."
             )
 
@@ -118,13 +128,16 @@ def atualizar_usuario_service(usuario_id: int, dados: UsuarioUpdate, db: Session
     db.refresh(usuario)
     return usuario
 
-#Delete Físico (Não é a exclusão lógica do usuario -- Inativação)
+
+# ---------------------------------------------------------
+# EXCLUSÃO FÍSICA
+# ---------------------------------------------------------
 def deletar_usuario_service(usuario_id: int, db: Session):
     usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
 
     if not usuario:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Usuário não encontrado."
         )
 

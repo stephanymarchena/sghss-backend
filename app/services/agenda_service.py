@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from datetime import date
 from typing import List
 from fastapi import HTTPException
@@ -25,10 +25,11 @@ def get_agenda(db: Session, agenda_id: int) -> Agenda | None:
     return db.query(Agenda).filter(Agenda.id == agenda_id).first()
 
 
+#lista todos os horários de um profissional
 def listar_agenda_profissional(db: Session, profissional_id: int) -> List[Agenda]:
-     #lista todos os horários de um profissional
     return (
         db.query(Agenda)
+        .options(joinedload(Agenda.profissional))
         .filter(Agenda.profissional_id == profissional_id)
         .order_by(Agenda.data, Agenda.hora)
         .all()
@@ -36,9 +37,9 @@ def listar_agenda_profissional(db: Session, profissional_id: int) -> List[Agenda
 
 
 def listar_disponiveis(db: Session, profissional_id: int, data: date) -> List[Agenda]:
-    #lista horários disponíveis para um profissional em uma data especifica
     return (
         db.query(Agenda)
+        .options(joinedload(Agenda.profissional))
         .filter(
             Agenda.profissional_id == profissional_id,
             Agenda.data == data,

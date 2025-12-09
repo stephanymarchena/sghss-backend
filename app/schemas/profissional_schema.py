@@ -5,6 +5,8 @@ class UsuarioResumo(BaseModel):
     id: int
     nome: str
 
+    model_config = {"from_attributes": True}
+
 
 # Campos comuns para criação e resposta || aceitar somente medico, enfermeiro e tecnico 
 class ProfissionalBase(BaseModel):

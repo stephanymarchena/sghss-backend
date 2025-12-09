@@ -1,7 +1,10 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+
 from app.models.paciente import Paciente
 from app.models.usuario import Usuario
+from app.models.prontuario import Prontuario  
+
 from app.schemas.paciente_schema import (
     PacienteCreate,
     PacienteUpdate
@@ -9,7 +12,7 @@ from app.schemas.paciente_schema import (
 
 
 def criar_paciente_service(dados: PacienteCreate, db: Session) -> Paciente:
-    # Verificar se o usuario existe
+    # Verificar se o usuário existe
     usuario = db.query(Usuario).filter(Usuario.id == dados.usuario_id).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
@@ -24,6 +27,16 @@ def criar_paciente_service(dados: PacienteCreate, db: Session) -> Paciente:
     db.add(paciente)
     db.commit()
     db.refresh(paciente)
+
+    # -------------------------------------------------------
+    # Criar prontuário automaticamente
+    # -------------------------------------------------------
+    prontuario = Prontuario(paciente_id=paciente.id)
+    db.add(prontuario)
+    db.commit()
+    # refresh é opcional aqui
+    db.refresh(prontuario)
+
     return paciente
 
 
