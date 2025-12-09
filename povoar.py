@@ -1,4 +1,4 @@
-# povoar.py — Script simples e seguro para povoamento inicial do SGHSS
+# povoar.py — Script simples para povoamento inicial do SGHSS - Ajuda nos testes no Postman. 
 
 from datetime import datetime, timezone
 from app.database import SessionLocal, inicializar_bd
@@ -127,15 +127,15 @@ try:
     db.commit()
     db.refresh(exame)
 
-    print("\n🎉  POÇO DE SAÚDE POVOADO COM SUCESSO!")
+    print("\n🎉  BANCO POVOADO COM SUCESSO, OBA DEU CERTO!")
     print("➡️  Admin: maria.admin@sghss.com / senha123")
     print("➡️  Paciente: carlos.paciente@sghss.com / senha123")
     print("➡️  Médico: roberto.medico@sghss.com / senha123")
 
 except Exception as e:
-    print("\n❌ ERRO DURANTE O POVOAMENTO:")
+    print("\n❌ ERRO DURANTE O POVOAMENTO, PUTS,DEU RUIM:")
     print(str(e))
 
 finally:
     db.close()
-    print("🔒 Conexão fechada.")
+    print("🔒 Conexão fechada, BYE.")
