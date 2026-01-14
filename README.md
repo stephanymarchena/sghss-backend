@@ -116,7 +116,8 @@ Além disso, o script gera:
 - Entrada automática no prontuário
 
 
-Dessa forma você só precisa rodar o arquivo com `"python povoar.py"` no terminal e ir direto testar (:
+Dessa forma você só precisa rodar o arquivo com `"python povoar.py"` no terminal e ir direto testar!
+Mais abaixo contém o corpo da requisão de alguns métodos para ajudar nos testes também (:
 
 
 # 📌 Principais Rotas da API
@@ -125,15 +126,42 @@ Dessa forma você só precisa rodar o arquivo com `"python povoar.py"` no termin
 
 Para fins de teste, recomenda-se utilizar o usuário Administrador (Maria), que possui permissões mais amplas e permite explorar todos os módulos do sistema com menos restrições.
 
+### 👤 Usuários
+| Método | Endpoint      | Descrição                     |
+|--------|---------------|-------------------------------|
+| POST   | /usuarios     | Cadastro de usuário (sign up) |
+| GET    | /usuarios/{id} | Lista usuario por id         |
+
+Exemplo: Corpo da requisição para cadastro de usuário (sign up) - use com o método POST acima:
+
+```bash
+{
+  "nome": "Tomas Machado",
+  "cpf": "4786582531",
+  "telefone": "2255847581",
+  "endereco": "Av Brasil, 42000",
+  "email": "tomas.paciente@sghss.com",
+  "sexo": "Masculino",
+  "data_nascimento": "1984-08-30",
+  "senha": "senha123"
+}
+```
+
 ### 🔐 Autenticação
 | Método | Endpoint    | Descrição      |
 |--------|-------------|----------------|
 | POST   | /auth/login | Gera token JWT |
 
-### 👤 Usuários
-| Método | Endpoint      | Descrição                     |
-|--------|---------------|-------------------------------|
-| GET    | /usuarios/me  | Dados do usuário autenticado  |
+Para autenticar use o x-www-form_urlcoded no postman com os dados do usuario, por exemplo:
+
+```bash
+{
+  "email": "admin@email.com",
+  "senha": "123456"
+}
+
+```
+
 
 ### 🧍 Pacientes
 | Método | Endpoint     | Descrição          |
@@ -141,11 +169,34 @@ Para fins de teste, recomenda-se utilizar o usuário Administrador (Maria), que 
 | POST   | /pacientes   | Criar paciente     |
 | GET    | /pacientes   | Listar pacientes   |
 
+Exemplo: Corpo da requisição para cadastrar um paciente com método POST, após cadastrar um usuario você pode transformá-lo em paciente conforme abaixo.
+
+```bash
+ {
+  "usuario_id": {id_do_usuario}
+}
+```
+
+
 ### 🧑‍⚕️ Profissionais de Saúde
-| Método | Endpoint          | Descrição            |
-|--------|-------------------|----------------------|
-| POST   | /profissionais    | Criar profissional   |
-| GET    | /profissionais    | Listar profissionais |
+| Método | Endpoint                     | Descrição                         |
+|--------|----------------------------- |---------------------------------- |
+| POST   | /profissionais               | Criar profissional                |
+| GET    | /profissionais               | Listar profissionais              |
+| GET    | /agendas/profissional/{id}   | Listar horários dos profissionais |
+
+Exemplo: Corpo da requisição para cadastrar um profissional de saúde com método POST:
+
+```bash
+{
+  "usuario_id": {id},
+  "tipo_profissional": "medico",
+  "registro_profissional": "CRM-12345"
+}
+```
+
+obs: tipos de profissonais permitidos: "medico", "enfermeiro", "tecnico"
+
 
 ### 📅 Consultas
 | Método | Endpoint                       | Descrição                           |
@@ -154,6 +205,15 @@ Para fins de teste, recomenda-se utilizar o usuário Administrador (Maria), que 
 | PATCH  | /consultas/{id}/confirmar      | Confirmar consulta                  |
 | PATCH  | /consultas/{id}/cancelar       | Cancelar consulta                   |
 | PATCH  | /consultas/{id}/finalizar      | Finalizar consulta (gera prontuário)|
+| PATCH  | /consultas/{id}                | Reagendar consulta                  |
+
+Exemplo: corpo da requisição para reagendar consulta (altere para uma data futura se necessário):
+
+```bash
+{
+  "data_hora": "2026-05-29T09:00:00"
+}
+```
 
 ### 🧪 Exames
 | Método | Endpoint       | Descrição                       |
@@ -161,21 +221,53 @@ Para fins de teste, recomenda-se utilizar o usuário Administrador (Maria), que 
 | POST   | /exames        | Registrar exame                 |
 | PATCH  | /exames/{id}   | Atualizar status / resultado    |
 
+Exemplo: corpo da requisição para registrar exame (mude os dados se necessário):
+
+```bash
+{
+  "paciente_id": 1,
+  "profissional_id": 2,
+  "consulta_id": 10,
+  "tipo_exame": "Texto"
+}
+```
+
+Exemplo: Corpo da requisição para atualizar exames / resultado 
+
+```bash
+{
+  "status": "Texto",
+  "resultado": "Texto"
+}
+```
+
 ### 📝 Prontuário
 | Método | Endpoint                   | Descrição                  |
 |--------|----------------------------|----------------------------|
 | GET    | /prontuarios/{paciente_id} | Ver histórico do paciente  |
 
+
 ### 🔔 Notificações
-| Método | Endpoint        | Descrição                          |
-|--------|-----------------|------------------------------------|
-| GET    | /notificacoes   | Notificações do usuário autenticado|
+| Método | Endpoint                    | Descrição                            |
+|--------|-----------------------------|--------------------------------------|
+| GET    | /notificacoes               | Notificações do usuário autenticado  |
+| POST   | /notificacoes/{usuario_id}  |Criação de notificação (Administrador)|
+
+Exemplo: Corpo da requisição para criar notificações (Administrador) 
+
+```bash
+{
+  "tipo": "Texto",
+  "mensagem": "Texto"
+}
+```
+
 
 ### 📊 Relatórios
 | Método | Endpoint                                | Descrição                  |
 |--------|-----------------------------------------|----------------------------|
-| GET    | /relatorios/consultas_por_status        | Consultas por status       |
-| GET    | /relatorios/consultas_por_mes           | Consultas por mês          |
-| GET    | /relatorios/consultas_por_profissional  | Consultas por profissional |
+| GET    | /relatorios/consultas-por-status        | Consultas por status       |
+| GET    | /relatorios/consultas-por-mes           | Consultas por mês          |
+| GET    | /relatorios/consultas-por-profissional  | Consultas por profissional |
 
 
